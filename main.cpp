@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <pcap/pcap.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <map>
 
@@ -9,9 +10,9 @@ class report_info
 {
 public:
 	int tx_count;
-	u_int32_t tx_bytes;
+	uint32_t tx_bytes;
 	int rx_count;
-	u_int32_t rx_bytes;
+	uint32_t rx_bytes;
 
 	report_info()
 	{
@@ -20,7 +21,7 @@ public:
 		rx_count = 0;
 		rx_bytes = 0;
 	}
-	report_info(int tx_count, u_int32_t tx_bytes, int rx_count, u_int32_t rx_bytes)
+	report_info(int tx_count, uint32_t tx_bytes, int rx_count, uint32_t rx_bytes)
 	{
 		this->tx_count = tx_count;
 		this->tx_bytes = tx_bytes;
@@ -35,7 +36,7 @@ bool check_ipv4(const u_char* packet)
 	else false;
 }
 
-u_int32_t get_ip(const u_char* packet, bool send_or_dest)
+uint32_t get_ip(const u_char* packet, bool send_or_dest)
 {
 	int shift = 0;
 	// sender ip
@@ -45,7 +46,7 @@ u_int32_t get_ip(const u_char* packet, bool send_or_dest)
 	else
 		shift = 30;
 	
-	u_int32_t ret_ip = 0;
+	uint32_t ret_ip = 0;
 	for(int i=shift;i<shift+4;i++)
 	{
 		ret_ip <<= 8;
@@ -56,7 +57,7 @@ u_int32_t get_ip(const u_char* packet, bool send_or_dest)
 
 char errbuf[PCAP_ERRBUF_SIZE];
 
-std::map<u_int32_t, report_info> report_mp;
+std::map<uint32_t, report_info> report_mp;
 
 int main(int argc, char* argv[])
 {
@@ -90,11 +91,11 @@ int main(int argc, char* argv[])
 		
 		if(check_ipv4(packet))
 		{
-			u_int32_t send_ip = get_ip(packet, 1), dest_ip = get_ip(packet, 0);
+			uint32_t send_ip = get_ip(packet, 1), dest_ip = get_ip(packet, 0);
 		
 		
-			std::map<u_int32_t, report_info>:: iterator send_it = report_mp.find(send_ip);
-			std::map<u_int32_t, report_info>:: iterator dest_it = report_mp.find(dest_ip);
+			std::map<uint32_t, report_info>:: iterator send_it = report_mp.find(send_ip);
+			std::map<uint32_t, report_info>:: iterator dest_it = report_mp.find(dest_ip);
 			if(send_it == report_mp.end()) report_mp[send_ip] = report_info(1, header->caplen, 0, 0);
 			else
 			{
@@ -112,7 +113,7 @@ int main(int argc, char* argv[])
 	printf("Address\t\tPacket_count\tBytes\tTx_count\tTx_bytes\tRx_count\tRx_bytes\n");
 	for(auto it=report_mp.begin();it!=report_mp.end();it++)
 	{
-		u_int32_t address = it->first;
+		uint32_t address = it->first;
 		report_info res_info = it->second;
 		printf("%u.%u.%u.%u\t",(address>>24)%256, (address>>16)%256, (address>>8)%256, address%256);
 		printf("%d\t\t%u\t", res_info.tx_count + res_info.rx_count, res_info.tx_bytes + res_info.rx_bytes);
