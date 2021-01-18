@@ -65,6 +65,7 @@ int main(int argc, char* argv[])
 	{
 		printf("Systax pcap-stat <file>\n");
 		printf("pcap-stat test.pcap\n");
+		return -1;
 	}
 
 	pcap_t* test_pcap = pcap_open_offline(argv[1], errbuf);
