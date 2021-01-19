@@ -4,23 +4,23 @@
 #include <stdint.h>
 #include <string.h>
 #include <map>
-
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 class report_info
 {
-private:
+public:
 	int tx_count;
 	uint32_t tx_bytes;
 	int rx_count;
 	uint32_t rx_bytes;
 
-public:
 	report_info()
 	{
-		tx_count = 0;
-		tx_bytes = 0;
-		rx_count = 0;
-		rx_bytes = 0;
+		this->tx_count = 0;
+		this->tx_bytes = 0;
+		this->rx_count = 0;
+		this->rx_bytes = 0;
 	}
 	report_info(int tx_count, uint32_t tx_bytes, int rx_count, uint32_t rx_bytes)
 	{
@@ -29,6 +29,7 @@ public:
 		this->rx_count = rx_count;
 		this->rx_bytes = rx_bytes;
 	}
+
 };
 
 bool check_ipv4(const u_char* packet)
@@ -86,7 +87,7 @@ int main(int argc, char* argv[])
 	if(test_pcap == nullptr)
 	{
 		fprintf(stderr, "pcap_open_offline(%s) return nullptr - %s\n", argv[1], errbuf);
-		return -1;
+		return 2;
 	}
 	
 	while(true)
@@ -94,10 +95,23 @@ int main(int argc, char* argv[])
 		struct pcap_pkthdr* header;
 		const u_char* packet;
 		int res = pcap_next_ex(test_pcap, &header, &packet);
+		
+		// if res == 1 -> The packet was read without problems.
+
+		// Packets are being read from a live capture, and the timeout expired.
 		if(res == 0) continue;
-		if(res == -1 || res == -2)
+		
+		// An error occurred while reading the packet.
+		else if(res == -1)
 		{
-			printf("pcap end.\n");
+			fprintf(stderr, "Error occurred while reading the packet.\n%s\n", errbuf);
+			break;
+		}
+
+		// packets are being read from a "savefile", and there are no more packets to read from the savefile.
+		else if(res == -2)
+		{
+			printf("No more packets from savefile.\n");
 			break;
 		}
 
@@ -128,11 +142,16 @@ int main(int argc, char* argv[])
 	{
 		uint32_t address = it->first;
 		report_info res_info = it->second;
+
+		// Need change endianness.
+		//printf("%s\n", inet_ntoa(*(struct in_addr *)&address));
+		
 		printf("%u.%u.%u.%u\t",(address>>24)%256, (address>>16)%256, (address>>8)%256, address%256);
 		printf("%d\t\t%u\t", res_info.tx_count + res_info.rx_count, res_info.tx_bytes + res_info.rx_bytes);
 		printf("%d\t\t%u\t\t", res_info.tx_count, res_info.tx_bytes);
 		printf("%d\t\t%u\n", res_info.rx_count, res_info.rx_bytes);
 	}
 
+	pcap_close(test_pcap);
 	return 0;
 }
