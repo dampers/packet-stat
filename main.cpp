@@ -8,12 +8,13 @@
 
 class report_info
 {
-public:
+private:
 	int tx_count;
 	uint32_t tx_bytes;
 	int rx_count;
 	uint32_t rx_bytes;
 
+public:
 	report_info()
 	{
 		tx_count = 0;
@@ -34,6 +35,18 @@ bool check_ipv4(const u_char* packet)
 {
 	if(packet[12] == 0x08 && packet[13] == 0x00) return true;
 	else false;
+}
+
+bool check_tcp(const u_char* packet)
+{
+	if(packet[23] == 0x06) return true;
+	return false;
+}
+
+bool check_udp(const u_char* packet)
+{
+	if(packet[23] == 0x11) return true;
+	return false;
 }
 
 uint32_t get_ip(const u_char* packet, bool send_or_dest)
